@@ -36,7 +36,7 @@ class Model:
         self.won = False
 
     def get_mouse_pos(self, x, y):
-        if 120 < x < 480 and 120 < y < 480 and self.won == False:
+        if 120 < x < 480 and 120 < y < 480 and not self.won:
             xpos = x // 120 - 1
             ypos = y // 120 - 1
 
@@ -82,8 +82,9 @@ class Controller:
                 if event.type == pygame.QUIT:
                     self.model.run = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = pygame.mouse.get_pos()
-                    self.model.get_mouse_pos(x, y)
+                    if event.button == 1:
+                        x, y = pygame.mouse.get_pos()
+                        self.model.get_mouse_pos(x, y)
 
             self.view.draw()
 
