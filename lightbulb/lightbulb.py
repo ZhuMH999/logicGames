@@ -50,7 +50,7 @@ class Model:
                     if self.lights[ypos + SIDES[i][1]][xpos + SIDES[i][0]] == 0:
                         self.lights[ypos + SIDES[i][1]][xpos + SIDES[i][0]] = 1
                     else:
-                        self.lights[ypos+ SIDES[i][1]][xpos + SIDES[i][0]] = 0
+                        self.lights[ypos + SIDES[i][1]][xpos + SIDES[i][0]] = 0
 
                 except IndexError:
                     continue

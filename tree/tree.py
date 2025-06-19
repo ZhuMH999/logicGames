@@ -11,18 +11,22 @@ class View:
         self.win.fill((100, 100, 100))
         self.draw_all_grids()
 
-    def draw_single_grid(self, top_left_x, top_left_y, data):
+    def draw_single_grid(self, top_left_x, top_left_y, data, color=False):
         for i in range(self.model.grid_size):
             for j in range(self.model.grid_size):
                 x = top_left_x + i * CELL_SIZE
                 y = top_left_y + j * CELL_SIZE
                 pygame.draw.rect(self.win, (0, 0, 0), (x, y, CELL_SIZE + 1, CELL_SIZE + 1), 1)
-                self.get_text_widget_and_center((0, 0, 0), x + CELL_SIZE // 2, y + CELL_SIZE // 2, FONT, str(data[j][i]))
+
+                if color and data[j][i] > 0:
+                    pygame.draw.rect(self.win, (125, 125, 0), (x+1, y+1, CELL_SIZE-0.5, CELL_SIZE-0.5))
+
+                if data[j][i] != 0:
+                    self.get_text_widget_and_center((0, 0, 0), x + CELL_SIZE // 2, y + CELL_SIZE // 2, FONT, str(data[j][i]))
 
     def draw_all_grids(self):
-        grid_size = self.model.grid_size
-        grid_width = grid_size * CELL_SIZE + (grid_size - 1)
-        grid_height = grid_size * CELL_SIZE + (grid_size - 1)
+        grid_width = self.model.grid_size * CELL_SIZE + (self.model.grid_size - 1)
+        grid_height = self.model.grid_size * CELL_SIZE + (self.model.grid_size - 1)
 
         top_grid_x = (WIDTH - grid_width) // 2
         top_grid_y = 25
@@ -43,7 +47,7 @@ class View:
                 label = f"{self.model.square_sizes[idx]} x {self.model.square_sizes[idx]}"
 
                 self.get_text_widget_and_center((0, 0, 0), grid_x + grid_width // 2, grid_y - 10, FONT, label)
-                self.draw_single_grid(grid_x, grid_y, self.model.answers[idx])
+                self.draw_single_grid(grid_x, grid_y, self.model.answers[idx], True)
 
     def get_text_widget_and_center(self, rgb, c_x, c_y, font, text):
         widget = font.render(text, True, rgb)
@@ -71,11 +75,62 @@ class Model:
             for j in range(size):
                 self.trees[j + top_left[1]][i + top_left[0]] += 1
 
-    def spawn_trees_check(self):
-        pass
+    def check_clicks(self, x, y):
+        grid_width = self.grid_size * CELL_SIZE + (self.grid_size - 1)
+        grid_height = self.grid_size * CELL_SIZE + (self.grid_size - 1)
 
-    def check_clicks(self):
-        pass
+        start_x = 100
+        start_y = grid_height + 65
+        spacing_x = 32
+        spacing_y = 20
+
+        for row in range(2):
+            for col in range(3):
+                idx = row * 3 + col
+
+                grid_x = start_x + (grid_width + spacing_x) * col
+                grid_y = start_y + (grid_height + spacing_y) * row
+
+                if grid_x <= x < grid_x + grid_width and grid_y <= y < grid_y + grid_height:
+                    cell_x = (x - grid_x) // CELL_SIZE
+                    cell_y = (y - grid_y) // CELL_SIZE
+                    if 0 <= cell_x < self.grid_size and 0 <= cell_y < self.grid_size:
+                        if self.answers[idx][cell_y][cell_x] == 0:
+                            self.answers[idx][cell_y][cell_x] = 1
+                        else:
+                            self.answers[idx][cell_y][cell_x] = 0
+
+    def find_first_one(self, data):
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                if data[j][i] == 1:
+                    return i, j
+        return None, None
+
+    @staticmethod
+    def check_for_square(i, j, data, size):
+        for x in range(i, i+size, 1):
+            for y in range(j, j+size, 1):
+                if data[y][x] != 1:
+                    return False
+        return True
+
+    def check_game_end(self):
+        for answer in range(len(self.answers)):
+            if sum(a.count(1) for a in self.answers[answer]) != self.square_sizes[answer] ** 2:
+                return False
+            i, j = self.find_first_one(self.answers[answer])
+            if not self.check_for_square(i, j, self.answers[answer], self.square_sizes[answer]):
+                return False
+
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                temp = 0
+                for answer in range(len(self.answers)):
+                    temp += self.answers[answer][j][i]
+                if temp != self.trees[j][i]:
+                    return False
+        return True
 
 class Controller:
     def __init__(self):
@@ -96,7 +151,11 @@ class Controller:
                     self.model.run = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        self.model.check_clicks()
+                        x, y = pygame.mouse.get_pos()
+                        self.model.check_clicks(x, y)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        print(self.model.check_game_end())
 
             self.view.draw()
 
